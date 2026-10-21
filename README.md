@@ -34,6 +34,38 @@ If this package is installed from ZKG, it will be added to the available plugins
 
 If users have ZKG configured to load packages (see `@load packages` in the [ZKG Quickstart Guide](https://docs.zeek.org/projects/package-manager/en/stable/quickstart.html)), this plugin and these scripts will automatically be loaded and ready to go.
 
+## Protocol Detection and Custom Ports
+
+GE SRTP detection is port-based. By default, the TCP analyzer is registered for
+TCP port 18245. The Spicy parser validates payload after Zeek assigns traffic to
+the analyzer, but this package does not provide a DPD payload signature for
+discovering GE SRTP on otherwise unregistered ports.
+
+To analyze GE SRTP on an additional TCP port, add the port to
+`GE_SRTP::tcp_ports` in a Zeek site policy loaded after this package:
+
+```zeek
+redef GE_SRTP::tcp_ports += { 12345/tcp };
+```
+
+`GE_SRTP::tcp_ports` is used both to register the TCP analyzer and to populate
+Zeek's `likely_server_ports` direction heuristic. Adding a port only to
+`likely_server_ports` does not enable parsing; the port must be present in
+`GE_SRTP::tcp_ports`.
+
+Port configuration is read when Zeek initializes. Restart a standalone Zeek
+process, or redeploy/restart Zeek cluster workers, after changing the site
+policy. Port-only configuration changes do not require rebuilding or
+reinstalling the parser.
+
+Registering a port assigns every TCP connection whose inferred server port
+matches it to the GE SRTP analyzer. Configure only ports dedicated to GE SRTP;
+unrelated or malformed traffic on those ports adds parsing overhead and is
+rejected when it does not parse as GE SRTP.
+
+This parser does not support GE SRTP over UDP, so there is no UDP port set to
+configure.
+
 ## Logging Capabilities
 
 ### GE SRTP Log (ge_srtp_general.log)
@@ -148,4 +180,3 @@ Updates to Zeek ICS Protocol Parsers:
 
 Copyright 2023 Battelle Energy Alliance, LLC. Released under the terms of the 3-Clause BSD License (see [`LICENSE.txt`](./LICENSE.txt)).
 ~
-

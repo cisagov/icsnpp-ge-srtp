@@ -4,8 +4,7 @@ import GE_SRTP;
 import Zeek_GE_SRTP;
 
 protocol analyzer spicy::GE_SRTP_TCP over TCP:
-    parse with GE_SRTP::Messages,
-    ports {18245/tcp};
+    parse with GE_SRTP::Messages;
 
 
 export GE_SRTP::Message;
@@ -15,5 +14,4 @@ on GE_SRTP::Message -> event GE_SRTP::SRTP_MessageEvt (
     $is_orig,
     self
 );
-
 

@@ -13,6 +13,9 @@ module GE_SRTP;
 export {
     redef enum Log::ID += { LOG_GENERAL_LOG };
 
+    ## TCP ports whose traffic is passed directly to the GE SRTP analyzer.
+    const tcp_ports: set[port] = { 18245/tcp } &redef;
+
    # Log policies for log filtering
     global log_policy_general: Log::PolicyHook;
 
@@ -29,6 +32,14 @@ redef record connection += {
 
 #Put protocol detection information here
 event zeek_init() &priority=5 {
+    # This helps Zeek identify the server endpoint. It does not register the
+    # protocol analyzer; registration happens explicitly below.
+    for ( p in tcp_ports )
+        add likely_server_ports[p];
+
+    Analyzer::register_for_ports(Analyzer::ANALYZER_SPICY_GE_SRTP_TCP,
+                                 tcp_ports);
+
     # initialize logging streams for all ge_srtp logs
                       Log::create_stream(GE_SRTP::LOG_GENERAL_LOG,
                       [$columns=general_log,
@@ -45,5 +56,3 @@ function emit_ge_srtp_general_log(c: connection) {
     Log::write(GE_SRTP::LOG_GENERAL_LOG, c$ge_srtp_general_log);
     delete c$ge_srtp_general_log;
 }
-
-
